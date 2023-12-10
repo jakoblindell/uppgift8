@@ -1,24 +1,33 @@
 package se.magictechnology.intromlkit
 
+import android.content.res.Resources
 import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.Text
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.TextRecognizer
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.collect
+import se.magictechnology.intromlkit.ui.MainViewModel
 import se.magictechnology.intromlkit.ui.theme.IntroMLKitTheme
 
 
@@ -33,55 +42,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Column {
-                        Greeting("Android")
-
-                        Button(onClick = {
-                            runTextRecognition()
-                        }) {
-                            Text("Process image")
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private fun runTextRecognition() {
-
-        var selectedImage = BitmapFactory.decodeResource(resources, R.drawable.sign1)
-
-        val image = InputImage.fromBitmap(selectedImage, 0)
-        var textRecognizerOptions = TextRecognizerOptions.Builder().build()
-        val recognizer = TextRecognition.getClient(textRecognizerOptions)
-        //mTextButton.setEnabled(false)
-        recognizer.process(image)
-            .addOnSuccessListener { texts ->
-                //mTextButton.setEnabled(true)
-                processTextRecognitionResult(texts)
-            }
-            .addOnFailureListener { e -> // Task failed with an exception
-                //mTextButton.setEnabled(true)
-                e.printStackTrace()
-            }
-    }
-
-    private fun processTextRecognitionResult(texts: Text) {
-        val blocks: List<Text.TextBlock> = texts.getTextBlocks()
-        if (blocks.size == 0) {
-            //showToast("No text found")
-            return
-        }
-        //mGraphicOverlay.clear()
-        for (i in blocks.indices) {
-            val lines: List<Text.Line> = blocks[i].getLines()
-            for (j in lines.indices) {
-                val elements: List<Text.Element> = lines[j].getElements()
-                for (k in elements.indices) {
-                    //val textGraphic: Graphic = TextGraphic(mGraphicOverlay, elements[k])
-                    //mGraphicOverlay.add(textGraphic)
-                    Log.i("MLKITDEBUG",elements[k].text + " " + elements[k].confidence.toString())
-
+                    MainScreen(
+                        resources = resources
+                    )
                 }
             }
         }
@@ -89,21 +52,66 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Column {
-        Text(
-            text = "Hello $name!",
-            modifier = modifier
+fun MainScreen(
+    viewModel: MainViewModel = viewModel(),
+    resources: Resources
+) {
+    val receiptDrawable = R.drawable.receipt
+    val streetSignDrawable = R.drawable.street_sign
+    val trainScheduleDrawable = R.drawable.train_schedule
+    Column(
+        modifier = Modifier
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        val screenState = viewModel.sharedFlow.collectAsState(initial = "")
+        println(screenState.value)
+        Text(modifier = Modifier
+            .padding(16.dp),
+            text = screenState.value ?: ""
         )
-
-
+        TextImageWithButton(receiptDrawable) {
+            val selectedImage = BitmapFactory.decodeResource(resources, receiptDrawable)
+            viewModel.runTextRecognition(selectedImage)
+        }
+        TextImageWithButton(streetSignDrawable) {
+            val selectedImage = BitmapFactory.decodeResource(resources, streetSignDrawable)
+            viewModel.runTextRecognition(selectedImage)
+        }
+        TextImageWithButton(trainScheduleDrawable) {
+            val selectedImage = BitmapFactory.decodeResource(resources, trainScheduleDrawable)
+            viewModel.runTextRecognition(selectedImage)
+        }
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-    IntroMLKitTheme {
-        Greeting("Android")
+fun TextImageWithButton(
+    @DrawableRes imageIdRes: Int,
+    processImage: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        TextImage(imageIdRes)
+        Button(onClick = {
+            processImage()
+        }) {
+            Text("Process image")
+        }
+    }
+}
+
+@Composable
+fun TextImage(@DrawableRes imageIdRes: Int) {
+    Card(
+        modifier = Modifier.size(240.dp),
+    ) {
+        Image(
+            painterResource(imageIdRes),
+            contentDescription = "",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }

@@ -67,5 +67,6 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     implementation("com.google.mlkit:text-recognition:16.0.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
     //implementation("com.google.android.gms:play-services-mlkit-text-recognition:16.0.0")
 }
